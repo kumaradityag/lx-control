@@ -3,7 +3,8 @@
 from typing import Tuple
 import numpy as np
 
-class PIDController():
+
+class PIDController:
     def __init__(self):
 
         # We will initialize some variables that might be useful
@@ -16,12 +17,8 @@ class PIDController():
         self.ki = 0.0
         self.kd = 0.0
 
-
-    def HeadingControl(self,
-                       v_ref: float,
-                       theta_ref: float,
-                       theta_curr: float,
-                       delta_t: float
+    def HeadingControl(
+        self, v_ref: float, theta_ref: float, theta_curr: float, delta_t: float
     ) -> Tuple[float, float]:
         """
         PID performing heading control.
@@ -44,15 +41,22 @@ class PIDController():
         # should be the one to update them also.
 
         v = v_ref
-        omega = np.random.uniform(-8.0, 8.0)
+
+        e_heading = theta_ref - theta_curr
+        # e_heading = (e_heading + np.pi) % (2 * np.pi) - np.pi  # Wrap to [-pi, pi]
+        int_heading = self.prev_int_heading + (e_heading * delta_t)
+        de_heading = (e_heading - self.prev_e_heading) / delta_t
+
+        omega = (self.kp * e_heading) + (self.ki * int_heading) + (self.kd * de_heading)
+
+        self.prev_e_heading = e_heading
+        self.prev_int_heading = int_heading
+
         return v, omega
 
-    def OffsetControl(self,
-                      v_ref: float,
-                      y_ref: float,
-                      y_curr: float,
-                      delta_t: float
-                      ) -> Tuple[float, float]:
+    def OffsetControl(
+        self, v_ref: float, y_ref: float, y_curr: float, delta_t: float
+    ) -> Tuple[float, float]:
         """
         PID performing lateral offset control.
         Args:
@@ -73,8 +77,17 @@ class PIDController():
         # self.prev_e_offset the previous error. But note that you
         # should be the one to update them also.
 
-        omega = np.random.uniform(-8.0, 8.0)
         v = v_ref
+
+        e_offset = y_ref - y_curr
+        int_offset = self.prev_int_offset + (e_offset * delta_t)
+        de_offset = (e_offset - self.prev_e_offset) / delta_t
+
+        omega = (self.kp * e_offset) + (self.ki * int_offset) + (self.kd * de_offset)
+
+        self.prev_e_offset = e_offset
+        self.prev_int_offset = int_offset
+
         return v, omega
 
     def SetGains(self, kp: float, ki: float, kd: float) -> None:
